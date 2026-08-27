@@ -8,4 +8,4 @@ compatibility_date = "2024-11-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "sipwise"
-database_id = "REPLACE_WITH_YOUR_D1_ID"
+database_id = "ac4f8a34-6bf6-4eb4-826b-b36dd1680c3b"
