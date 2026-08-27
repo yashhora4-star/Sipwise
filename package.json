@@ -1,0 +1,17 @@
+{
+  "name": "sipwise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SipWise — recommend & collect liquor marketplace (India)",
+  "scripts": {
+    "db:schema": "wrangler d1 execute sipwise --file=db/schema.sql",
+    "db:schema:local": "wrangler d1 execute sipwise --local --file=db/schema.sql",
+    "db:seed": "node db/gen-seed.js && wrangler d1 execute sipwise --file=db/seed.sql",
+    "db:seed:local": "node db/gen-seed.js && wrangler d1 execute sipwise --local --file=db/seed.sql",
+    "dev": "wrangler pages dev public --d1 DB",
+    "deploy": "wrangler pages deploy public --project-name sipwise"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SipWise · Admin</title>
+<style>
+  :root{--wine:#7A1E2B;--ink:#221b17;--mut:#6e645b;--line:#e7ded4;--bg:#faf7f2;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--wine);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px}
+  header b{font-size:18px;letter-spacing:.5px}
+  header span{opacity:.8;font-size:13px}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  .gate{max-width:360px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+  .gate h1{font-size:19px;margin:0 0 4px}.gate p{color:var(--mut);margin:0 0 16px;font-size:13px}
+  input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff}
+  button{background:var(--wine);color:#fff;border:0;border-radius:9px;padding:11px 16px;font:inherit;font-weight:600;cursor:pointer}
+  button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .tabs{display:flex;gap:8px;margin:18px 0}
+  .tabs button{background:#fff;color:var(--mut);border:1px solid var(--line);font-weight:500}
+  .tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .stat b{display:block;font-size:24px}.stat span{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+  th{background:#f3ece3;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .s-created{background:#f0e9df;color:#7a6}.s-paid{background:#e4f0e6;color:#2f7a44}.s-ready{background:#e6eef8;color:#2b5aa0}.s-collected{background:#eee;color:#666}.s-cancelled{background:#fbe6e6;color:#a33}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .hide{display:none}
+  h2{font-size:16px;margin:22px 0 10px}
+  small{color:var(--mut)}
+  .err{color:#a33;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="gate" class="gate">
+  <h1>SipWise Admin</h1>
+  <p>Enter the admin key to continue.</p>
+  <input id="key" type="password" placeholder="Admin key" autocomplete="off">
+  <div style="height:10px"></div>
+  <button onclick="login()">Enter</button>
+  <div id="gateErr" class="err"></div>
+</div>
+
+<div id="app" class="hide">
+  <header><b>SipWise</b><span>operations console</span>
+    <span style="margin-left:auto"><button class="ghost" onclick="logout()" style="color:#fff;background:transparent;border-color:rgba(255,255,255,.4)">Sign out</button></span>
+  </header>
+  <div class="wrap">
+    <div class="tabs">
+      <button class="on" data-t="dash" onclick="tab('dash')">Dashboard</button>
+      <button data-t="orders" onclick="tab('orders')">Orders</button>
+      <button data-t="shops" onclick="tab('shops')">Shops</button>
+      <button data-t="inv" onclick="tab('inv')">Inventory</button>
+    </div>
+
+    <section id="dash">
+      <div class="stats" id="statgrid"></div>
+    </section>
+
+    <section id="orders" class="hide">
+      <div class="row" style="margin-bottom:10px">
+        <select id="ofilter" onchange="loadOrders()" style="max-width:200px">
+          <option value="">All statuses</option>
+          <option value="created">Created (unpaid)</option>
+          <option value="paid">Paid</option>
+          <option value="ready">Ready</option>
+          <option value="collected">Collected</option>
+        </select>
+        <button class="ghost" onclick="loadOrders()">Refresh</button>
+      </div>
+      <table><thead><tr><th>#</th><th>Customer</th><th>Shop</th><th>Items</th><th>Total</th><th>Status</th><th>Collect</th><th>Action</th></tr></thead>
+      <tbody id="orows"></tbody></table>
+    </section>
+
+    <section id="shops" class="hide">
+      <h2>Add / edit shop</h2>
+      <div class="row">
+        <input id="sh_id" type="hidden">
+        <input id="sh_name" placeholder="Shop name" style="max-width:220px">
+        <input id="sh_area" placeholder="Area" style="max-width:150px">
+        <input id="sh_addr" placeholder="Full address" style="max-width:280px">
+        <input id="sh_lic" placeholder="Licence no." style="max-width:150px">
+        <button onclick="saveShop()">Save</button>
+        <button class="ghost" onclick="clearShop()">Clear</button>
+      </div>
+      <div style="height:12px"></div>
+      <table><thead><tr><th>#</th><th>Name</th><th>Area</th><th>Licence</th><th>Active</th><th></th></tr></thead>
+      <tbody id="shrows"></tbody></table>
+    </section>
+
+    <section id="inv" class="hide">
+      <div class="row" style="margin-bottom:10px">
+        <select id="inv_shop" onchange="loadInv()" style="max-width:240px"></select>
+        <input id="inv_search" placeholder="Filter products" oninput="renderInv()" style="max-width:200px">
+      </div>
+      <table><thead><tr><th>Product</th><th>Type</th><th>Price ₹</th><th>Stock</th><th></th></tr></thead>
+      <tbody id="invrows"></tbody></table>
+    </section>
+  </div>
+</div>
+
+<script>
+let KEY = '';
+const H = () => ({ 'Authorization': 'Bearer ' + KEY, 'content-type': 'application/json' });
+async function api(path, opts={}) {
+  const r = await fetch(path, { ...opts, headers: { ...H(), ...(opts.headers||{}) } });
+  if (r.status === 401) { logout(); throw new Error('unauthorized'); }
+  return r.json();
+}
+function login(){
+  KEY = document.getElementById('key').value.trim();
+  if(!KEY){return;}
+  api('/api/admin/stats').then(j=>{
+    if(j.ok){ document.getElementById('gate').classList.add('hide'); document.getElementById('app').classList.remove('hide'); boot(); }
+    else document.getElementById('gateErr').textContent='Invalid key';
+  }).catch(()=>document.getElementById('gateErr').textContent='Invalid key');
+}
+function logout(){ KEY=''; document.getElementById('app').classList.add('hide'); document.getElementById('gate').classList.remove('hide'); }
+function tab(t){
+  ['dash','orders','shops','inv'].forEach(x=>document.getElementById(x).classList.toggle('hide',x!==t));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  if(t==='orders')loadOrders(); if(t==='shops')loadShops(); if(t==='inv')loadShopsForInv();
+}
+function boot(){ loadStats(); }
+async function loadStats(){
+  const j=await api('/api/admin/stats'); const s=j.stats;
+  const cards=[['Users',s.users],['Orders',s.orders],['Paid',s.paid_orders],['GMV ₹',s.gmv.toLocaleString('en-IN')],['Revenue ₹',s.revenue.toLocaleString('en-IN')],['Products',s.products],['Shops',s.shops]];
+  document.getElementById('statgrid').innerHTML=cards.map(c=>`<div class="stat"><b>${c[1]}</b><span>${c[0]}</span></div>`).join('');
+}
+async function loadOrders(){
+  const f=document.getElementById('ofilter').value;
+  const j=await api('/api/admin/orders'+(f?`?status=${f}`:''));
+  document.getElementById('orows').innerHTML=(j.orders||[]).map(o=>{
+    const items=o.items.map(i=>`${i.qty}× ${i.name}`).join('<br>');
+    const act = o.status==='paid' ? `<button class="ghost" onclick="setStatus(${o.id},'ready')">Mark ready</button>`
+      : o.status==='ready' ? `<div class="row"><input id="ck${o.id}" placeholder="code" style="width:80px;padding:6px"><button onclick="collect(${o.id})">Collected</button></div>`
+      : '—';
+    return `<tr><td>${o.id}</td><td>${o.user_phone}</td><td>${o.shop}</td><td>${items}</td><td>₹${o.total}</td>
+      <td><span class="pill s-${o.status}">${o.status}</span></td><td><b>${o.collect_code||'—'}</b></td><td>${act}</td></tr>`;
+  }).join('') || '<tr><td colspan="8"><small>No orders.</small></td></tr>';
+}
+async function setStatus(id,status){ await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({order_id:id,status})}); loadOrders(); }
+async function collect(id){
+  const code=document.getElementById('ck'+id).value.trim();
+  const j=await api('/api/admin/order-status',{method:'POST',body:JSON.stringify({order_id:id,status:'collected',code})});
+  if(!j.ok) alert(j.error||'Code mismatch'); loadOrders();
+}
+let SHOPS=[];
+async function loadShops(){
+  const j=await api('/api/admin/shops'); SHOPS=j.shops||[];
+  document.getElementById('shrows').innerHTML=SHOPS.map(s=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.area||''}</td><td>${s.license_no||''}</td>
+    <td>${s.active?'yes':'no'}</td><td><button class="ghost" onclick='editShop(${JSON.stringify(s)})'>Edit</button></td></tr>`).join('');
+}
+function editShop(s){ sh_id.value=s.id; sh_name.value=s.name; sh_area.value=s.area||''; sh_addr.value=s.address||''; sh_lic.value=s.license_no||''; }
+function clearShop(){ sh_id.value=''; sh_name.value=''; sh_area.value=''; sh_addr.value=''; sh_lic.value=''; }
+async function saveShop(){
+  const body={id:sh_id.value||undefined,name:sh_name.value.trim(),area:sh_area.value.trim(),address:sh_addr.value.trim(),license_no:sh_lic.value.trim()};
+  if(!body.name)return alert('Name required');
+  await api('/api/admin/shops',{method:'POST',body:JSON.stringify(body)}); clearShop(); loadShops();
+}
+let INV=[];
+async function loadShopsForInv(){
+  if(!SHOPS.length){ const j=await api('/api/admin/shops'); SHOPS=j.shops||[]; }
+  document.getElementById('inv_shop').innerHTML=SHOPS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  loadInv();
+}
+async function loadInv(){
+  const id=document.getElementById('inv_shop').value; if(!id)return;
+  const j=await api('/api/admin/inventory?shop_id='+id); INV=j.items||[]; renderInv();
+}
+function renderInv(){
+  const q=(document.getElementById('inv_search').value||'').toLowerCase();
+  const shop=document.getElementById('inv_shop').value;
+  const rows=INV.filter(i=>!q||i.name.toLowerCase().includes(q)).slice(0,300);
+  document.getElementById('invrows').innerHTML=rows.map(i=>`<tr><td>${i.name}</td><td>${i.type}</td>
+    <td><input id="p${i.product_id}" value="${i.price}" style="width:80px;padding:6px"></td>
+    <td><input id="s${i.product_id}" value="${i.stock}" style="width:70px;padding:6px"></td>
+    <td><button class="ghost" onclick="saveInv(${shop},${i.product_id})">Save</button></td></tr>`).join('');
+}
+async function saveInv(shop,pid){
+  const price=document.getElementById('p'+pid).value, stock=document.getElementById('s'+pid).value;
+  await api('/api/admin/inventory',{method:'POST',body:JSON.stringify({shop_id:shop,product_id:pid,price,stock})});
+}
+document.getElementById('key').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+</script>
+</body>
+</html>
