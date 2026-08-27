@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SipWise — What are we drinking tonight?</title>
+<title>Surahi — What are we drinking tonight?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -186,7 +186,7 @@
 
 <header>
   <div class="wrap"><nav>
-    <a href="#" class="logo">Sip<b>Wise</b></a>
+    <a href="#" class="logo">Sura<b>hi</b></a>
     <div class="nav-links">
       <a href="#shop">Shop</a>
       <a href="#moments">Occasions</a>
@@ -272,15 +272,15 @@
 <footer>
   <div class="wrap foot-grid">
     <div>
-      <div class="logo" style="font-family:Fraunces;font-size:22px;font-weight:600">Sip<b>Wise</b></div>
-      <div class="foot-note">Discover, pay online, and collect from a licensed store near you. SipWise never delivers alcohol — the handover happens in-store, where age is verified.</div>
+      <div class="logo" style="font-family:Fraunces;font-size:22px;font-weight:600">Sura<b>hi</b></div>
+      <div class="foot-note">Discover, pay online, and collect from a licensed store near you. Surahi never delivers alcohol — the handover happens in-store, where age is verified.</div>
     </div>
     <div style="font-size:12.5px;line-height:2">
-      <div style="color:#fff;font-weight:600;margin-bottom:6px">SipWise</div>
+      <div style="color:#fff;font-weight:600;margin-bottom:6px">Surahi</div>
       <a href="#shop">Shop</a><br><a href="#moments">Occasions</a><br><a href="#circles">Circles</a>
     </div>
     <div style="font-size:12px;color:#9A8F80;max-width:30ch;line-height:1.7">
-      Drink responsibly. Sale of liquor is prohibited to persons below the legal drinking age. © 2026 SipWise.
+      Drink responsibly. Sale of liquor is prohibited to persons below the legal drinking age. © 2026 Surahi.
     </div>
   </div>
 </footer>
@@ -308,14 +308,14 @@
     <select class="selrow" id="cShop"></select>
     <div id="cTotals"></div>
     <button class="btn" style="width:100%;justify-content:center;margin-top:12px" id="cPay">Reserve &amp; pay</button>
-    <p class="fine" style="margin-top:10px">Final price is set by the store's live rate. You collect in person with valid age proof — SipWise does not deliver alcohol.</p>
+    <p class="fine" style="margin-top:10px">Final price is set by the store's live rate. You collect in person with valid age proof — Surahi does not deliver alcohol.</p>
   </div>
 </div></div>
 
 <!-- auth modal -->
 <div class="modal-bg" id="authModal"><div class="modal" style="text-align:left">
   <button class="close" id="aClose">×</button>
-  <h3 style="text-align:center">Welcome to SipWise</h3>
+  <h3 style="text-align:center">Welcome to Surahi</h3>
   <p class="fine" style="text-align:center;margin-bottom:18px">Sign in to reserve bottles, build your Circle &amp; reorder faster.</p>
   <div id="aStep1">
     <label style="font-size:12px;color:var(--muted);font-weight:600">Mobile number</label>
@@ -323,7 +323,7 @@
     <input id="aPhone" inputmode="numeric" maxlength="10" placeholder="10-digit number" style="flex:1;border:1px solid var(--line2);border-radius:8px;padding:11px 13px;font-size:15px;outline:none;font-family:Inter"/></div>
     <p class="fine" id="aErr" style="color:var(--wine);min-height:16px"></p>
     <button class="btn" style="width:100%;justify-content:center;margin-top:6px" id="aSend">Send OTP</button>
-    <p class="fine" style="margin-top:14px">You must be of legal drinking age to use SipWise. By continuing you agree to our terms.</p>
+    <p class="fine" style="margin-top:14px">You must be of legal drinking age to use Surahi. By continuing you agree to our terms.</p>
   </div>
   <div id="aStep2" style="display:none">
     <p style="font-size:14px;margin-bottom:12px">Enter the code sent to <b id="aNum"></b>. <a id="aEdit" style="color:var(--wine);cursor:pointer;font-weight:600">Edit</a></p>
@@ -545,7 +545,7 @@ async function reserveAndPay(){
 function openRazorpay(pay,order){
   const rz=new Razorpay({
     key:pay.key_id, order_id:pay.rp_order_id, amount:pay.amount, currency:pay.currency||'INR',
-    name:'SipWise', description:'Reserve & collect',
+    name:'Surahi', description:'Reserve & collect',
     prefill:{contact:USER.phone?.replace('+91','')||''},
     theme:{color:'#7A1E2B'},
     handler:async(resp)=>{
