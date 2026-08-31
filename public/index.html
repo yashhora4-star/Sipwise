@@ -259,11 +259,26 @@
     <div>
       <div class="eyebrow">Circles</div>
       <h2>See what your people are pouring.</h2>
-      <p class="lead">Add the friends you'd share a bottle with. When someone opens something good, it shows up here — a quiet way to share a drink across the miles.</p>
-      <div class="feed" id="feed"></div>
-      <div class="addrow">
-        <input id="friend" type="text" placeholder="Add a friend by name…" maxlength="22"/>
-        <button class="btn" id="addBtn">Add</button>
+      <p class="lead">Add the friends you'd share a bottle with. Post what you're drinking, and it shows up in their feed — a quiet way to share a drink across the miles.</p>
+
+      <div id="circGate" style="display:none;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px;text-align:center">
+        <p style="font-size:14px;color:var(--muted);margin-bottom:12px">Sign in to build your Circle.</p>
+        <button class="btn" id="circSignIn">Sign in</button>
+      </div>
+
+      <div id="circApp" style="display:none">
+        <div id="pendWrap"></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <select id="pourSel" class="selrow" style="flex:1;min-width:180px;margin:0"></select>
+          <button class="btn" id="pourBtn">Share a pour</button>
+        </div>
+        <div class="feed" id="feed"></div>
+        <div class="addrow" style="margin-top:6px">
+          <input id="friend" type="text" inputmode="numeric" maxlength="10" placeholder="Add a friend by 10-digit number…"/>
+          <button class="btn" id="addBtn">Add</button>
+        </div>
+        <p class="fine" id="addMsg" style="min-height:16px;margin-top:8px"></p>
+        <div id="friendList" style="margin-top:10px"></div>
       </div>
     </div>
   </div>
@@ -607,7 +622,7 @@ document.getElementById('aVerify').onclick=async()=>{
   const r=await api('/api/auth/verify-otp',{method:'POST',body:JSON.stringify({phone:window._sipPhone,code})});
   btn.disabled=false;btn.textContent='Verify & continue';
   if(!r.ok){document.getElementById('aErr2').textContent=r.error||'Wrong code.';document.querySelectorAll('#otpRow input').forEach(i=>i.style.borderColor='var(--wine)');return;}
-  USER=r.user;reflectUser();
+  USER=r.user;reflectUser();loadCircle();
   document.getElementById('aWho').textContent='+91 '+window._sipPhone;step('aDone');
 };
 document.getElementById('aFinish').onclick=()=>{closeAuth();document.getElementById('shop').scrollIntoView({behavior:'smooth'});};
@@ -638,7 +653,7 @@ async function openAcct(){
 }
 document.getElementById('acClose').onclick=()=>acctModal.style.display='none';
 acctModal.addEventListener('click',e=>{if(e.target===acctModal)acctModal.style.display='none';});
-document.getElementById('acLogout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});USER=null;reflectUser();acctModal.style.display='none';};
+document.getElementById('acLogout').onclick=async()=>{await api('/api/auth/logout',{method:'POST'});USER=null;reflectUser();loadCircle();acctModal.style.display='none';};
 
 // ---------- images / circles / ticker / motion ----------
 loadImg(document.getElementById('heroImg'),IMG.hero,"linear-gradient(120deg,#2a1a12,#4a2a1c)");
@@ -646,12 +661,28 @@ loadImg(document.getElementById('circImg'),IMG.circ,"linear-gradient(160deg,#4a2
 const AV=["#7A1E2B","#B08D3E","#3E7D52","#7A4A2A","#5E7080","#8A4E7E"];
 function avc(n){let h=0;for(const c of n)h=c.charCodeAt(0)+((h<<5)-h);return AV[Math.abs(h)%AV.length];}
 function inits(n){const p=n.trim().split(/\s+/);return((p[0]?.[0]||"")+(p[1]?.[0]||"")).toUpperCase();}
-let circle=[{n:"Aarav Mehta",d:"Glenfiddich 12",t:"just now"},{n:"Priya Nair",d:"Chandon Brut",t:"4 min ago"},{n:"Kabir Shah",d:"Old Monk",t:"11 min ago"}];
-function renderFeed(){document.getElementById('feed').innerHTML=circle.map(f=>`<div class="frow"><div class="av" style="background:${avc(f.n)}">${inits(f.n)}<span class="dot"></span></div><div><div class="nm">${f.n}</div><div class="ac">pouring a <b>${f.d}</b></div></div><span class="tm">${f.t}</span></div>`).join("");}
-function addFriend(n){n=(n||"").trim();if(!n)return;if(circle.some(c=>c.n.toLowerCase()===n.toLowerCase()))return;const pick=PRODUCTS.length?PRODUCTS[Math.abs(n.length*13)%PRODUCTS.length].name:'something good';circle.unshift({n,d:pick,t:"just now"});renderFeed();}
-document.getElementById('addBtn').onclick=()=>{const el=document.getElementById('friend');addFriend(el.value);el.value="";};
-document.getElementById('friend').addEventListener('keydown',e=>{if(e.key==='Enter'){addFriend(e.target.value);e.target.value="";}});
-renderFeed();
+function ago(ts){const s=Math.floor(Date.now()/1000)-ts;if(s<60)return'just now';const m=Math.floor(s/60);if(m<60)return m+' min ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+function circReflect(){document.getElementById('circGate').style.display=USER?'none':'block';document.getElementById('circApp').style.display=USER?'block':'none';}
+async function loadCircle(){
+  circReflect();
+  if(!USER)return;
+  const sel=document.getElementById('pourSel');
+  if(!sel.dataset.filled&&PRODUCTS.length){sel.innerHTML='<option value="">What are you pouring?</option>'+PRODUCTS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');sel.dataset.filled='1';}
+  const [fr,fd]=await Promise.all([api('/api/circle/friends'),api('/api/circle/feed')]);
+  const pw=document.getElementById('pendWrap');
+  pw.innerHTML=(fr.pending||[]).map(p=>`<div class="frow" style="justify-content:space-between;margin-bottom:8px"><div><b>${p.label}</b><div class="ac">wants to join your Circle</div></div><div class="row"><button class="btn" style="padding:7px 12px" data-acc="${p.id}">Accept</button><button data-dec="${p.id}" style="border:1px solid var(--line2);background:#fff;border-radius:8px;padding:7px 12px;font-size:12.5px">Ignore</button></div></div>`).join('');
+  const feed=document.getElementById('feed');
+  feed.innerHTML=(fd.items||[]).length?fd.items.map(f=>`<div class="frow"><div class="av" style="background:${avc(f.who)}">${inits(f.who)}<span class="dot"></span></div><div><div class="nm">${f.mine?'You':f.who}</div><div class="ac">pouring a <b>${f.product}</b>${f.note?' · '+f.note:''}</div></div><span class="tm">${ago(f.at)}</span></div>`).join(''):'<p class="fine">No pours yet. Add a friend, or share what you’re drinking.</p>';
+  const fl=document.getElementById('friendList');
+  fl.innerHTML=(fr.friends||[]).length?('<p class="fine" style="margin-bottom:6px">Your circle</p>'+fr.friends.map(f=>`<span class="chip" style="margin:0 6px 6px 0;display:inline-block">${f.name||f.label}</span>`).join('')):'';
+}
+document.getElementById('circSignIn').onclick=()=>openAuth();
+document.getElementById('pourBtn').onclick=async()=>{const pid=document.getElementById('pourSel').value;if(!pid)return;const r=await api('/api/circle/pour',{method:'POST',body:JSON.stringify({product_id:+pid})});if(r.ok){document.getElementById('pourSel').value='';loadCircle();}};
+async function addFriend(v){const num=(v||'').replace(/\D/g,'');const msg=document.getElementById('addMsg');if(num.length!==10){msg.style.color='var(--wine)';msg.textContent='Enter a valid 10-digit number.';return;}const r=await api('/api/circle/add',{method:'POST',body:JSON.stringify({phone:num})});if(r.ok){msg.style.color='var(--green)';msg.textContent=({requested:'Request sent!',accepted:'Connected!',already_friends:'Already in your circle.',already_requested:'Request already pending.'})[r.state]||'Done';document.getElementById('friend').value='';loadCircle();}else{msg.style.color='var(--wine)';msg.textContent=r.error||'Could not add.';}}
+document.getElementById('addBtn').onclick=()=>addFriend(document.getElementById('friend').value);
+document.getElementById('friend').addEventListener('keydown',e=>{if(e.key==='Enter')addFriend(e.target.value);});
+document.getElementById('pendWrap').addEventListener('click',async e=>{const a=e.target.closest('[data-acc]');const d=e.target.closest('[data-dec]');if(!a&&!d)return;const id=+(a?a.dataset.acc:d.dataset.dec);await api('/api/circle/respond',{method:'POST',body:JSON.stringify({id,accept:!!a})});loadCircle();});
+loadCircle();
 
 const BRANDS=["Glenfiddich","Sula Vineyards","Amrut","Bira 91","Old Monk","Jack Daniel's","Chandon","Tanqueray","Jameson","Grey Goose","Paul John","Johnnie Walker","Hendrick's","Fratelli","Kingfisher","Indri","Bacardi"];
 (function(){const row=BRANDS.map(b=>`<span>${b}</span>`).join("");document.getElementById('ticker').innerHTML=row+row;})();
@@ -672,7 +703,7 @@ async function boot(){
   try{
     const [pr,sh,me]=await Promise.all([api('/api/products?limit=500'),api('/api/shops'),api('/api/auth/me')]);
     PRODUCTS=(pr.items||[]);SHOPS=(sh.items||[]);USER=(me.user||null);
-    reflectUser();fillShops();render();updateCart();
+    reflectUser();fillShops();render();updateCart();loadCircle();
     if(!PRODUCTS.length)document.getElementById('count').textContent='Shelf is empty — seed the database.';
   }catch(err){
     document.getElementById('count').textContent='Could not reach the store API.';
